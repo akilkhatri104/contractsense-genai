@@ -41,7 +41,7 @@ export default function Home() {
           </Show>
           <Show when='signed-in'>
             <Button asChild>
-              <Link href="/tasks">Open Supabase demo</Link>
+              <Link href="/tasks">Open Drizzle demo</Link>
             </Button>
             <SignOutButton>
               <Button variant="outline">Sign out</Button>

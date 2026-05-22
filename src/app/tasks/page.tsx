@@ -2,24 +2,50 @@ import Link from "next/link";
 
 import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
+import { desc } from "drizzle-orm";
 
 import { Button } from "@/components/ui/button";
-import { createClerkSupabaseServerClient } from "@/lib/supabase";
+import { tasks } from "@/lib/db/schema";
+import { withClerkSupabaseRls } from "@/lib/db/rls";
 
 import { createTask } from "./actions";
 
 export default async function TasksPage() {
-  const { userId, redirectToSignIn } = await auth();
+  const { userId, getToken, redirectToSignIn } = await auth();
 
   if (!userId) {
     return redirectToSignIn();
   }
 
-  const supabase = await createClerkSupabaseServerClient();
-  const { data: tasks, error } = await supabase
-    .from("tasks")
-    .select("id, title, created_at")
-    .order("created_at", { ascending: false });
+  let taskRows: Array<{
+    id: string;
+    title: string;
+    createdAt: string;
+  }> | null = null;
+  let error: { code?: string; message: string } | null = null;
+
+  try {
+    taskRows = await withClerkSupabaseRls(getToken, async (db) =>
+      db
+        .select({
+          id: tasks.id,
+          title: tasks.title,
+          createdAt: tasks.createdAt,
+        })
+        .from(tasks)
+        .orderBy(desc(tasks.createdAt)),
+    );
+  } catch (caughtError) {
+    const typedError = caughtError as {
+      code?: string;
+      message?: string;
+    };
+
+    error = {
+      code: typedError.code,
+      message: typedError.message ?? "Unknown database error.",
+    };
+  }
 
   const setupHint =
     error?.code === "42P01"
@@ -32,12 +58,13 @@ export default async function TasksPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
-              Clerk + Supabase
+              Clerk + Supabase + Drizzle
             </p>
             <h1 className="text-3xl font-semibold">Protected task demo</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              This page reads and writes through Supabase using the active Clerk
-              session token. Row Level Security is keyed off your Clerk user ID.
+              This page reads and writes through Drizzle against Supabase
+              Postgres. Row Level Security stays keyed off your Clerk session
+              claims.
             </p>
           </div>
           <UserButton />
@@ -71,7 +98,7 @@ export default async function TasksPage() {
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-medium">Your Supabase rows</h2>
             <span className="text-sm text-slate-400">
-              {tasks?.length ?? 0} item{tasks?.length === 1 ? "" : "s"}
+              {taskRows?.length ?? 0} item{taskRows?.length === 1 ? "" : "s"}
             </span>
           </div>
 
@@ -80,24 +107,24 @@ export default async function TasksPage() {
               <p>Supabase query failed: {error.message}</p>
               {setupHint ? <p className="mt-2">{setupHint}</p> : null}
             </div>
-          ) : tasks && tasks.length > 0 ? (
+          ) : taskRows && taskRows.length > 0 ? (
             <ul className="mt-4 space-y-3">
-              {tasks.map((task) => (
+              {taskRows.map((task) => (
                 <li
                   key={task.id}
                   className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
                 >
                   <p className="font-medium text-slate-100">{task.title}</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {new Date(task.created_at).toLocaleString()}
+                    {new Date(task.createdAt).toLocaleString()}
                   </p>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="mt-4 text-sm text-slate-400">
-              No rows yet. Add a task to verify the Clerk token is accepted by
-              Supabase and the RLS policy scopes records to your user.
+              No rows yet. Add a task to verify Drizzle is running against
+              Supabase while the RLS policy scopes records to your user.
             </p>
           )}
         </section>

@@ -1,8 +1,8 @@
 # ContractSense
 
-This app uses Clerk for authentication and Supabase for database access. The
-current integration uses Supabase's native third-party Clerk support, not the
-older Clerk JWT template flow.
+This app uses Clerk for authentication, Supabase for Postgres, and Drizzle ORM
+for typed SQL access. The auth integration uses Supabase's native third-party
+Clerk support, not the older Clerk JWT template flow.
 
 ## Local setup
 
@@ -20,8 +20,9 @@ older Clerk JWT template flow.
 ## What was wired
 
 - Clerk stays the source of truth for auth.
-- Supabase clients in [src/lib/supabase.ts](src/lib/supabase.ts) attach the
-  active Clerk session token through the `accessToken` callback.
-- The sample tasks page uses that token server-side and relies on RLS policies
-  in [supabase/migrations/20260522090000_create_tasks.sql](supabase/migrations/20260522090000_create_tasks.sql)
-  to scope rows to the signed-in Clerk user.
+- Drizzle is configured through [drizzle.config.ts](drizzle.config.ts) and the
+  typed schema in [src/lib/db/schema.ts](src/lib/db/schema.ts).
+- The request-scoped helper in [src/lib/db/rls.ts](src/lib/db/rls.ts) decodes
+  the active Clerk session token and sets transaction-local Supabase JWT claims
+  before running Drizzle queries, so RLS still scopes rows to the signed-in
+  Clerk user.

@@ -3,10 +3,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-import { createClerkSupabaseServerClient } from "@/lib/supabase";
+import { tasks } from "@/lib/db/schema";
+import { withClerkSupabaseRls } from "@/lib/db/rls";
 
 export async function createTask(formData: FormData) {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
 
   if (!userId) {
     throw new Error("Not authenticated.");
@@ -18,15 +19,12 @@ export async function createTask(formData: FormData) {
     return;
   }
 
-  const supabase = await createClerkSupabaseServerClient();
-  const { error } = await supabase.from("tasks").insert({
-    title: title.trim(),
-    user_id: userId,
+  await withClerkSupabaseRls(getToken, async (db) => {
+    await db.insert(tasks).values({
+      title: title.trim(),
+      userId,
+    });
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
 
   revalidatePath("/tasks");
 }
