@@ -1,6 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Show, SignInButton, SignOutButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import Image from "next/image";
+import {
+  Show,
+  SignInButton,
+  SignOutButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -13,15 +19,33 @@ export default function Home() {
               <UserButton />
             </Show>
           </div>
-          <p>Individuals, Startups & SMEs often sign contracts without understanding legal risks. ContractSense uses Generative AI to extract clauses, flag risky terms and explain contracts in plain English which makes legal review accessible and affordable</p>
+          <p>
+            Individuals, Startups & SMEs often sign contracts without
+            understanding legal risks. ContractSense uses Generative AI to
+            extract clauses, flag risky terms and explain contracts in plain
+            English which makes legal review accessible and affordable
+          </p>
         </div>
-        <div className="flex justify-center">
+        <div className="mt-6 flex justify-center gap-3">
           <Show when='signed-out'>
             <SignInButton>
               <Button>
                 Login to get started
               </Button>
             </SignInButton>
+            <SignUpButton>
+              <Button variant="outline">
+                Create an account
+              </Button>
+            </SignUpButton>
+          </Show>
+          <Show when='signed-in'>
+            <Button asChild>
+              <Link href="/tasks">Open Supabase demo</Link>
+            </Button>
+            <SignOutButton>
+              <Button variant="outline">Sign out</Button>
+            </SignOutButton>
           </Show>
         </div>
       </div>

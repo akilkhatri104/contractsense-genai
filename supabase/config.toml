@@ -1,0 +1,5 @@
+[auth.third_party.clerk]
+enabled = true
+# Replace this with your Clerk instance domain, for example:
+# domain = "your-app.clerk.accounts.dev"
+domain = "https://proper-kingfish-59.clerk.accounts.dev"
