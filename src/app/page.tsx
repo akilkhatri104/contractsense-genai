@@ -1,3 +1,4 @@
+import { DocumentUpload } from "@/components/document-upload";
 import { Button } from "@/components/ui/button";
 import {
   Show,
@@ -43,9 +44,13 @@ export default function Home() {
             <Button asChild>
               <Link href="/tasks">Open Drizzle demo</Link>
             </Button>
+            <Button asChild variant="secondary">
+              <Link href="/documents">Open document vault</Link>
+            </Button>
             <SignOutButton>
               <Button variant="outline">Sign out</Button>
             </SignOutButton>
+            <DocumentUpload />
           </Show>
         </div>
       </div>

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
 type TokenGetter = () => Promise<string | null>;
@@ -23,10 +22,4 @@ export function createClerkSupabaseClient(getToken: TokenGetter) {
   return createClient(supabaseUrl, supabasePublishableKey, {
     accessToken: getToken,
   });
-}
-
-export async function createClerkSupabaseServerClient() {
-  const { getToken } = await auth();
-
-  return createClerkSupabaseClient(() => getToken());
 }
