@@ -4,14 +4,14 @@ import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@clerk/nextjs";
-import { FileText, LoaderCircle, UploadCloud } from "lucide-react";
+import { FileText, LoaderCircle, Sparkles, UploadCloud } from "lucide-react";
 import { FileRejection, useDropzone } from "react-dropzone";
 
-import { saveUploadedDocument } from "@/app/documents/actions";
+import { createAnalyzedContract } from "@/app/contracts/actions";
 import { Button } from "@/components/ui/button";
+import { CONTRACT_ACCEPT } from "@/lib/contracts";
 import {
   buildDocumentStoragePath,
-  DOCUMENT_ACCEPT,
   DOCUMENTS_BUCKET,
   formatFileSize,
   MAX_DOCUMENT_SIZE_BYTES,
@@ -20,7 +20,12 @@ import {
 import { createClerkSupabaseClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-type UploadStatus = "failed" | "queued" | "success" | "uploading";
+type UploadStatus =
+  | "analyzing"
+  | "failed"
+  | "queued"
+  | "redirecting"
+  | "uploading";
 
 type UploadItem = {
   id: string;
@@ -94,7 +99,6 @@ export function DocumentUpload() {
     setIsUploading(true);
 
     const supabase = createClerkSupabaseClient(() => getToken());
-    let successfulUploads = 0;
 
     try {
       for (const [index, file] of acceptedFiles.entries()) {
@@ -126,7 +130,12 @@ export function DocumentUpload() {
         }
 
         try {
-          await saveUploadedDocument({
+          updateUpload(queuedUpload.id, {
+            message: "Upload complete. Parsing and analyzing the contract with Gemini.",
+            status: "analyzing",
+          });
+
+          const result = await createAnalyzedContract({
             bucketName: DOCUMENTS_BUCKET,
             contentType,
             originalName: file.name,
@@ -134,18 +143,24 @@ export function DocumentUpload() {
             storagePath,
           });
 
-          successfulUploads += 1;
           updateUpload(queuedUpload.id, {
-            message: "Stored in Supabase Storage and indexed in Postgres.",
-            status: "success",
+            message:
+              result.status === "completed"
+                ? "Analysis complete. Opening the contract report."
+                : "Analysis finished with an error. Opening the contract report.",
+            status: "redirecting",
           });
-        } catch (metadataError) {
+
+          startTransition(() => {
+            router.push(`/contract/${result.contractId}`);
+          });
+        } catch (analysisError) {
           await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath]);
 
           const message =
-            metadataError instanceof Error
-              ? metadataError.message
-              : "Saving document metadata failed.";
+            analysisError instanceof Error
+              ? analysisError.message
+              : "Contract analysis failed.";
 
           updateUpload(queuedUpload.id, {
             message,
@@ -155,9 +170,6 @@ export function DocumentUpload() {
       }
     } finally {
       setIsUploading(false);
-    }
-
-    if (successfulUploads > 0) {
       startTransition(() => {
         router.refresh();
       });
@@ -166,9 +178,9 @@ export function DocumentUpload() {
 
   const { getInputProps, getRootProps, isDragActive, isDragReject, open } =
     useDropzone({
-      accept: DOCUMENT_ACCEPT,
+      accept: CONTRACT_ACCEPT,
       disabled: isUploading || !isLoaded,
-      maxFiles: 5,
+      maxFiles: 1,
       maxSize: MAX_DOCUMENT_SIZE_BYTES,
       onDrop(acceptedFiles, rejectedFiles) {
         void handleDrop(acceptedFiles, rejectedFiles);
@@ -180,8 +192,8 @@ export function DocumentUpload() {
       <div
         {...getRootProps()}
         className={cn(
-          "rounded-3xl border border-dashed px-6 py-10 transition-colors",
-          "cursor-pointer bg-slate-950/70",
+          "cursor-pointer rounded-3xl border border-dashed px-6 py-10 transition-colors",
+          "bg-slate-950/70",
           isDragActive && "border-cyan-400 bg-cyan-500/10",
           isDragReject && "border-rose-400 bg-rose-500/10",
           (isUploading || !isLoaded) && "cursor-not-allowed opacity-70",
@@ -199,12 +211,12 @@ export function DocumentUpload() {
           </div>
 
           <h3 className="mt-4 text-lg font-semibold text-slate-100">
-            Upload private documents
+            Upload a contract PDF
           </h3>
           <p className="mt-2 max-w-xl text-sm text-slate-400">
-            Drag PDF, DOC, DOCX, RTF, or TXT files here. Each upload is written
-            to your private Supabase folder and the metadata row is inserted
-            through RLS-backed Drizzle.
+            Drag in one PDF. After the file lands in your private Supabase
+            folder, a contract row is created and Gemini runs clause extraction,
+            risk scoring, and plain-English summarization.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -216,10 +228,10 @@ export function DocumentUpload() {
               }}
               disabled={isUploading || !isLoaded}
             >
-              Choose files
+              Choose PDF
             </Button>
             <span className="text-xs uppercase tracking-[0.2em] text-slate-500">
-              Up to 5 files, {formatFileSize(MAX_DOCUMENT_SIZE_BYTES)} each
+              PDF only, {formatFileSize(MAX_DOCUMENT_SIZE_BYTES)} max
             </span>
           </div>
         </div>
@@ -260,16 +272,25 @@ export function DocumentUpload() {
               <span
                 className={cn(
                   "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium capitalize",
-                  upload.status === "success" &&
-                    "bg-emerald-500/15 text-emerald-200",
                   upload.status === "failed" && "bg-rose-500/15 text-rose-200",
                   upload.status === "uploading" &&
                     "bg-cyan-500/15 text-cyan-200",
+                  upload.status === "analyzing" &&
+                    "bg-violet-500/15 text-violet-200",
                   upload.status === "queued" &&
                     "bg-slate-700/70 text-slate-200",
+                  upload.status === "redirecting" &&
+                    "bg-emerald-500/15 text-emerald-200",
                 )}
               >
-                {upload.status}
+                {upload.status === "analyzing" ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Sparkles className="size-3.5" />
+                    analyzing
+                  </span>
+                ) : (
+                  upload.status
+                )}
               </span>
             </div>
           ))}
