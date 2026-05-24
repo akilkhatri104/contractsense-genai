@@ -1,6 +1,7 @@
 import "server-only";
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { jsonrepair } from "jsonrepair";
 import { PDFParse } from "pdf-parse";
 import { z } from "zod";
 
@@ -230,7 +231,32 @@ ${schema.toString()}
 Do not wrap the JSON in markdown fences.`;
 
         const response = await model.invoke(fallbackPrompt);
-        return parseJsonWithSchema(response, schema, contextLabel, error);
+
+        try {
+            return parseJsonWithSchema(response, schema, contextLabel, error);
+        } catch (fallbackError) {
+            if (contextLabel !== "clause extraction") {
+                throw fallbackError;
+            }
+
+            const strictPrompt = `${prompt}
+
+Return ONLY a JSON object with this exact shape:
+{"clauses":[{"clauseType":"...","content":"..."}]}
+Rules:
+- "clauses" must be an array.
+- Each item must include BOTH "clauseType" and "content" strings.
+- No extra keys at the top level.
+- Do not wrap in markdown.`;
+
+            const strictResponse = await model.invoke(strictPrompt);
+            return parseJsonWithSchema(
+                strictResponse,
+                schema,
+                contextLabel,
+                fallbackError,
+            );
+        }
     }
 }
 
@@ -248,10 +274,18 @@ function parseJsonWithSchema<T>(
     try {
         parsed = JSON.parse(jsonText);
     } catch (error) {
-        throw new Error(
-            `Unable to parse ${contextLabel} JSON response. ${stringifyError(originalError)}`,
-        );
+        try {
+            const repaired = jsonrepair(jsonText);
+            parsed = JSON.parse(repaired);
+        } catch (repairError) {
+            throw new Error(
+                `Unable to parse ${contextLabel} JSON response. ${stringifyError(originalError)}`,
+            );
+        }
     }
+
+    parsed = coerceClauseExtraction(parsed, contextLabel);
+    parsed = coerceClauseAnalysis(parsed, contextLabel);
 
     const result = schema.safeParse(parsed);
     if (!result.success) {
@@ -261,6 +295,296 @@ function parseJsonWithSchema<T>(
     }
 
     return result.data;
+}
+
+function coerceClauseExtraction(
+    parsed: unknown,
+    contextLabel: string,
+): unknown {
+    if (contextLabel !== "clause extraction") {
+        return parsed;
+    }
+
+    const normalizedArray = normalizeClauseArray(parsed);
+
+    if (normalizedArray) {
+        return { clauses: normalizedArray };
+    }
+
+    return parsed;
+}
+
+function coerceClauseAnalysis(parsed: unknown, contextLabel: string): unknown {
+    if (contextLabel !== "clause analysis") {
+        return parsed;
+    }
+
+    const normalizedArray = normalizeAnalysisArray(parsed);
+
+    if (normalizedArray) {
+        return { analyses: normalizedArray };
+    }
+
+    return parsed;
+}
+
+function normalizeAnalysisArray(parsed: unknown) {
+    if (Array.isArray(parsed)) {
+        return normalizeAnalysisItems(parsed);
+    }
+
+    if (parsed && typeof parsed === "object" && "analyses" in parsed) {
+        const analyses = (parsed as { analyses?: unknown }).analyses;
+        if (Array.isArray(analyses)) {
+            return normalizeAnalysisItems(analyses);
+        }
+    }
+
+    return null;
+}
+
+function normalizeAnalysisItems(items: unknown[]) {
+    const normalized = items
+        .map((item) => {
+            if (!item || typeof item !== "object") {
+                return null;
+            }
+
+            const record = item as Record<string, unknown>;
+            const actionItem = pickFirstString(record, [
+                "actionItem",
+                "action",
+                "recommendation",
+                "nextStep",
+            ]);
+            const clauseType = pickFirstString(record, [
+                "clauseType",
+                "type",
+                "title",
+                "heading",
+            ]);
+            const content = pickFirstString(record, [
+                "content",
+                "text",
+                "body",
+                "clause",
+            ]);
+            const plainEnglish = pickFirstString(record, [
+                "plainEnglish",
+                "summary",
+                "plain",
+            ]);
+            const riskReason = pickFirstString(record, [
+                "riskReason",
+                "reason",
+                "riskExplanation",
+            ]);
+            const risk = normalizeRisk(record);
+
+            if (!content || !plainEnglish || !risk || !riskReason) {
+                return null;
+            }
+
+            return {
+                actionItem: actionItem ?? "Review this clause with counsel.",
+                clauseType: clauseType ?? "General",
+                content,
+                plainEnglish,
+                risk,
+                riskReason,
+            };
+        })
+        .filter(
+            (
+                analysis,
+            ): analysis is {
+                actionItem: string;
+                clauseType: string;
+                content: string;
+                plainEnglish: string;
+                risk: "High" | "Medium" | "Low";
+                riskReason: string;
+            } => Boolean(analysis),
+        );
+
+    return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeRisk(record: Record<string, unknown>) {
+    const riskValue = record.risk ?? record.riskLevel ?? record.severity;
+    if (typeof riskValue === "string") {
+        const normalized = riskValue.trim().toLowerCase();
+        if (normalized === "high") {
+            return "High";
+        }
+        if (normalized === "medium" || normalized === "med") {
+            return "Medium";
+        }
+        if (normalized === "low") {
+            return "Low";
+        }
+    }
+
+    return null;
+}
+
+function normalizeClauseArray(parsed: unknown) {
+    if (Array.isArray(parsed)) {
+        return normalizeClauseItems(parsed) ?? fallbackClauseItems(parsed);
+    }
+
+    if (parsed && typeof parsed === "object" && "clauses" in parsed) {
+        const clauses = (parsed as { clauses?: unknown }).clauses;
+        if (Array.isArray(clauses)) {
+            return normalizeClauseItems(clauses) ?? fallbackClauseItems(clauses);
+        }
+    }
+
+    return null;
+}
+
+function normalizeClauseItems(items: unknown[]) {
+    const normalized = items
+        .map((item) => {
+            if (Array.isArray(item)) {
+                const joined = flattenClauseArray(item);
+                if (!joined) {
+                    return null;
+                }
+                return { clauseType: "General", content: joined };
+            }
+
+            if (typeof item === "string") {
+                const trimmed = item.trim();
+                if (!trimmed) {
+                    return null;
+                }
+                return { clauseType: "General", content: trimmed };
+            }
+
+            if (item && typeof item === "object") {
+                const record = item as Record<string, unknown>;
+                const clauseType = pickFirstString(record, [
+                    "clauseType",
+                    "type",
+                    "title",
+                    "heading",
+                ]);
+                const content = pickFirstString(record, [
+                    "content",
+                    "text",
+                    "body",
+                    "clause",
+                ]);
+
+                const fallbackContent = content ?? pickFirstStringValue(record);
+                if (!fallbackContent) {
+                    return null;
+                }
+
+                return {
+                    clauseType: clauseType ?? "General",
+                    content: fallbackContent,
+                };
+            }
+
+            return null;
+        })
+        .filter(
+            (
+                clause,
+            ): clause is { clauseType: string; content: string } =>
+                Boolean(clause),
+        );
+
+    return normalized.length > 0 ? normalized : null;
+}
+
+function fallbackClauseItems(items: unknown[]) {
+    const fallback = items
+        .map((item) => {
+            if (item == null) {
+                return null;
+            }
+
+            const text =
+                typeof item === "string"
+                    ? item
+                    : Array.isArray(item)
+                      ? flattenClauseArray(item)
+                      : safeStringify(item);
+
+            const trimmed = text?.trim();
+            if (!trimmed) {
+                return null;
+            }
+
+            return { clauseType: "General", content: trimmed };
+        })
+        .filter(
+            (
+                clause,
+            ): clause is { clauseType: string; content: string } =>
+                Boolean(clause),
+        );
+
+    return fallback.length > 0 ? fallback : null;
+}
+
+function flattenClauseArray(items: unknown[]) {
+    const parts = items
+        .map((item) => {
+            if (typeof item === "string") {
+                return item;
+            }
+            if (item && typeof item === "object") {
+                const record = item as Record<string, unknown>;
+                return pickFirstStringValue(record) ?? safeStringify(item);
+            }
+            return item == null ? "" : String(item);
+        })
+        .map((text) => text.trim())
+        .filter(Boolean);
+
+    return parts.length > 0 ? parts.join(" ") : null;
+}
+
+function pickFirstStringValue(record: Record<string, unknown>) {
+    for (const value of Object.values(record)) {
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (trimmed) {
+                return trimmed;
+            }
+        }
+    }
+
+    return null;
+}
+
+function safeStringify(value: unknown) {
+    try {
+        return JSON.stringify(value);
+    } catch {
+        return String(value ?? "");
+    }
+}
+
+function pickFirstString(
+    record: Record<string, unknown>,
+    keys: string[],
+) {
+    for (const key of keys) {
+        const value = record[key];
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (trimmed) {
+                return trimmed;
+            }
+        }
+    }
+
+    return null;
 }
 
 function normalizeModelText(response: unknown) {
