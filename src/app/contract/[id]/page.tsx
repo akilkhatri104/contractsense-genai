@@ -5,6 +5,8 @@ import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 
+import { deleteContract } from "@/app/contracts/actions";
+import { ContractDeleteButton } from "@/components/contract-delete-button";
 import { ContractReport } from "@/components/contract-report";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +85,15 @@ export default async function ContractDetailPage({
           status={contract.status as ContractStatus}
           title={contract.title}
         />
+        <div className="flex justify-end">
+          <ContractDeleteButton
+            action={async () => {
+              "use server";
+              await deleteContract(id);
+            }}
+            contractTitle={contract.title}
+          />
+        </div>
       </div>
     </main>
   );

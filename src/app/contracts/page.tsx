@@ -5,11 +5,13 @@ import { auth } from "@clerk/nextjs/server";
 import { desc, eq } from "drizzle-orm";
 
 import { DocumentUpload } from "@/components/document-upload";
+import { ContractDeleteButton } from "@/components/contract-delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRiskTone } from "@/lib/contracts";
 import { contracts, documents } from "@/lib/db/schema";
 import { withClerkSupabaseRls } from "@/lib/db/rls";
+import { deleteContract } from "@/app/contracts/actions";
 
 export default async function ContractsPage() {
   const { userId, getToken, redirectToSignIn } = await auth();
@@ -20,19 +22,19 @@ export default async function ContractsPage() {
 
   const contractRows = await withClerkSupabaseRls(getToken, async (db) =>
     db
-      .select({
-        completedAt: contracts.completedAt,
-        contractId: contracts.id,
-        createdAt: contracts.createdAt,
-        currentStage: contracts.currentStage,
-        errorMessage: contracts.errorMessage,
-        highRiskCount: contracts.highRiskCount,
-        lowRiskCount: contracts.lowRiskCount,
-        mediumRiskCount: contracts.mediumRiskCount,
-        originalName: documents.originalName,
-        status: contracts.status,
-        title: contracts.title,
-      })
+        .select({
+          completedAt: contracts.completedAt,
+          contractId: contracts.id,
+          createdAt: contracts.createdAt,
+          currentStage: contracts.currentStage,
+          errorMessage: contracts.errorMessage,
+          highRiskCount: contracts.highRiskCount,
+          lowRiskCount: contracts.lowRiskCount,
+          mediumRiskCount: contracts.mediumRiskCount,
+          originalName: documents.originalName,
+          status: contracts.status,
+          title: contracts.title,
+        })
       .from(contracts)
       .innerJoin(documents, eq(contracts.documentId, documents.id))
       .orderBy(desc(contracts.createdAt)),
@@ -126,52 +128,66 @@ export default async function ContractsPage() {
           {contractRows.length > 0 ? (
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               {contractRows.map((contract) => (
-                <Link
+                <div
                   key={contract.contractId}
-                  href={`/contract/${contract.contractId}`}
                   className="group rounded-[1.5rem] border border-white/10 bg-white/5 p-5 transition hover:border-cyan-300/30 hover:bg-cyan-400/5"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white group-hover:text-cyan-100">
-                        {contract.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-400">{contract.originalName}</p>
+                  <Link href={`/contract/${contract.contractId}`} className="block">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white group-hover:text-cyan-100">
+                          {contract.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {contract.originalName}
+                        </p>
+                      </div>
+                      <Badge
+                        className={
+                          contract.highRiskCount > 0
+                            ? getRiskTone("High")
+                            : contract.mediumRiskCount > 0
+                              ? getRiskTone("Medium")
+                              : getRiskTone("Low")
+                        }
+                      >
+                        {contract.status}
+                      </Badge>
                     </div>
-                    <Badge
-                      className={
-                        contract.highRiskCount > 0
-                          ? getRiskTone("High")
-                          : contract.mediumRiskCount > 0
-                            ? getRiskTone("Medium")
-                            : getRiskTone("Low")
-                      }
-                    >
-                      {contract.status}
-                    </Badge>
-                  </div>
 
-                  <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
-                    <MiniMetric label="High" value={contract.highRiskCount} tone="text-rose-200" />
-                    <MiniMetric
-                      label="Medium"
-                      value={contract.mediumRiskCount}
-                      tone="text-amber-200"
+                    <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
+                      <MiniMetric label="High" value={contract.highRiskCount} tone="text-rose-200" />
+                      <MiniMetric
+                        label="Medium"
+                        value={contract.mediumRiskCount}
+                        tone="text-amber-200"
+                      />
+                      <MiniMetric label="Low" value={contract.lowRiskCount} tone="text-emerald-200" />
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+                      <span>{new Date(contract.createdAt).toLocaleString()}</span>
+                      <span>
+                        {contract.errorMessage
+                          ? "Needs attention"
+                          : contract.completedAt
+                            ? "Report ready"
+                            : contract.currentStage}
+                      </span>
+                    </div>
+                  </Link>
+
+                  <div className="mt-4 flex justify-end">
+                    <ContractDeleteButton
+                      size="sm"
+                      contractTitle={contract.title}
+                      action={async () => {
+                        "use server";
+                        await deleteContract(contract.contractId);
+                      }}
                     />
-                    <MiniMetric label="Low" value={contract.lowRiskCount} tone="text-emerald-200" />
                   </div>
-
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-                    <span>{new Date(contract.createdAt).toLocaleString()}</span>
-                    <span>
-                      {contract.errorMessage
-                        ? "Needs attention"
-                        : contract.completedAt
-                          ? "Report ready"
-                          : contract.currentStage}
-                    </span>
-                  </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (

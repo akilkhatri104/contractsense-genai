@@ -1,8 +1,9 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import {
   analyzeContractClauses,
@@ -131,6 +132,58 @@ export async function createAnalyzedContract(
       status: "failed",
     };
   }
+}
+
+export async function deleteContract(contractId: string) {
+  const { userId, getToken } = await auth();
+
+  if (!userId) {
+    throw new Error("Not authenticated.");
+  }
+
+  const trimmedId = contractId.trim();
+
+  if (!trimmedId) {
+    throw new Error("Contract id is required.");
+  }
+
+  const [contract] = await withClerkSupabaseRls(getToken, async (db) =>
+    db
+      .select({
+        bucketName: documents.bucketName,
+        documentId: documents.id,
+        storagePath: documents.storagePath,
+      })
+      .from(contracts)
+      .innerJoin(documents, eq(contracts.documentId, documents.id))
+      .where(and(eq(contracts.id, trimmedId), eq(contracts.userId, userId))),
+  );
+
+  if (!contract) {
+    throw new Error("Contract not found.");
+  }
+
+  const supabase = await createClerkSupabaseServerClient();
+  const { error: storageError } = await supabase.storage
+    .from(contract.bucketName)
+    .remove([contract.storagePath]);
+
+  if (storageError) {
+    throw new Error(`Failed to delete document: ${storageError.message}`);
+  }
+
+  await withClerkSupabaseRls(getToken, async (db) => {
+    await db
+      .delete(contracts)
+      .where(and(eq(contracts.id, trimmedId), eq(contracts.userId, userId)));
+    await db
+      .delete(documents)
+      .where(and(eq(documents.id, contract.documentId), eq(documents.userId, userId)));
+  });
+
+  revalidatePath("/contracts");
+  revalidatePath(`/contract/${trimmedId}`);
+  redirect("/contracts");
 }
 
 async function completeContract(
