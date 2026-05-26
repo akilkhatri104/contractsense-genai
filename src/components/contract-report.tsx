@@ -89,7 +89,19 @@ export function ContractReport({
             >
               {status}
             </Badge>
-            <ContractReportExportButton />
+            <ContractReportExportButton
+              clauses={clauses}
+              completedAt={completedAt}
+              createdAt={createdAt}
+              currentStage={currentStage}
+              fileName={fileName}
+              highRiskCount={highRiskCount}
+              lowRiskCount={lowRiskCount}
+              mediumRiskCount={mediumRiskCount}
+              overallSummary={overallSummary}
+              status={status}
+              title={title}
+            />
           </div>
         </div>
 
