@@ -161,9 +161,9 @@ const styles = StyleSheet.create({
 });
 
 const riskStyleMap = {
-  high: styles.riskHigh,
-  medium: styles.riskMedium,
-  low: styles.riskLow,
+  High: styles.riskHigh,
+  Medium: styles.riskMedium,
+  Low: styles.riskLow,
 };
 
 const formatDateTime = (value: string | null) => {

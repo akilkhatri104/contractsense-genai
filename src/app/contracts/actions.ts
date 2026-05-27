@@ -11,6 +11,7 @@ import {
   segmentContractClauses,
   summarizeContract,
 } from "@/lib/contract-analysis";
+import { embedContractChunks } from "@/lib/rag";
 import {
   buildContractTitle,
   countClauseRisks,
@@ -104,6 +105,7 @@ export async function createAnalyzedContract(
 
     await updateContractStage(getToken, contractId, "summarizing");
     const overallSummary = await summarizeContract(analyzedClauses);
+    await embedContractChunks(contractId, rawText);
     await completeContract(getToken, contractId, {
       clauses: analyzedClauses,
       ...riskCounts,

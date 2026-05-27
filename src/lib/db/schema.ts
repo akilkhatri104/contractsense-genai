@@ -1,5 +1,6 @@
 import {
   bigint,
+  customType,
   integer,
   index,
   jsonb,
@@ -100,5 +101,58 @@ export const contracts = pgTable(
   (table) => [
     index("contracts_user_id_created_at_idx").on(table.userId, table.createdAt),
     uniqueIndex("contracts_document_id_idx").on(table.documentId),
+  ],
+);
+
+const vector = customType<{ data: number[] | string; driverData: unknown }>({
+  dataType() {
+    return "vector(768)";
+  },
+  toDriver(value: number[] | string) {
+    if (typeof value === "string") {
+      return value;
+    }
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: unknown) {
+    if (typeof value !== "string") {
+      return [];
+    }
+    const trimmed = value.replace(/^[\[]|[\]]$/g, "").trim();
+    if (!trimmed) {
+      return [];
+    }
+    return trimmed.split(",").map((entry) => Number(entry));
+  },
+});
+
+export const contractChunks = pgTable(
+  "contract_chunks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    contractId: uuid("contract_id")
+      .notNull()
+      .references(() => contracts.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    chunkIndex: integer("chunk_index").notNull(),
+    content: text("content").notNull(),
+    embedding: vector("embedding"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("contract_chunks_contract_id_idx").on(table.contractId),
+    index("contract_chunks_document_id_idx").on(table.documentId),
+    index("contract_chunks_user_id_created_at_idx").on(
+      table.userId,
+      table.createdAt,
+    ),
   ],
 );

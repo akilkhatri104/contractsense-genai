@@ -29,12 +29,13 @@ export default async function ContractDetailPage({
     return redirectToSignIn();
   }
 
-  const [contract] = await withClerkSupabaseRls(getToken, async (db) =>
-    db
-      .select({
-        clauses: contracts.clauses,
-        completedAt: contracts.completedAt,
-        createdAt: contracts.createdAt,
+    const [contract] = await withClerkSupabaseRls(getToken, async (db) =>
+      db
+        .select({
+          contractId: contracts.id,
+          clauses: contracts.clauses,
+          completedAt: contracts.completedAt,
+          createdAt: contracts.createdAt,
         currentStage: contracts.currentStage,
         errorMessage: contracts.errorMessage,
         highRiskCount: contracts.highRiskCount,
@@ -71,6 +72,7 @@ export default async function ContractDetailPage({
         </div>
 
         <ContractReport
+          contractId={contract.contractId}
           clauses={contract.clauses as ContractClause[]}
           completedAt={contract.completedAt}
           createdAt={contract.createdAt}

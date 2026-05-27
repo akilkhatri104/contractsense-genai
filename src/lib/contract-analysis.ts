@@ -10,6 +10,8 @@ import { type ContractClause } from "@/lib/contracts";
 
 const CLAUSE_BATCH_SIZE = 8;
 const MAX_CONTRACT_TEXT_CHARS = 120_000;
+const MAX_CLAUSE_PROMPT_CHARS = 20_000;
+const CLAUSE_PROMPT_OVERLAP_CHARS = 800;
 
 const extractedClauseSchema = z.object({
     clauses: z
@@ -40,8 +42,6 @@ const contractSummarySchema = z.object({
 });
 
 export async function extractContractText(pdfBuffer: Buffer) {
-    const blobData = new Uint8Array(pdfBuffer);
-
     const textResult = await parsePdfWithPdfParse(pdfBuffer);
 
     const rawText = cleanExtractedText(textResult.text);
@@ -56,13 +56,17 @@ export async function extractContractText(pdfBuffer: Buffer) {
 }
 
 export async function segmentContractClauses(rawText: string) {
-    const model = createGeminiModel();
-    const boundedText = boundContractText(rawText);
+  const model = createGeminiModel();
+  const boundedText = boundContractText(rawText);
 
     const clauseExtractor = model.withStructuredOutput(extractedClauseSchema, {
         name: "contract_clause_extraction",
     });
 
+  const sections = chunkContractForClauseExtraction(boundedText);
+  const extractedClauses: Array<{ clauseType: string; content: string }> = [];
+
+  for (const [index, section] of sections.entries()) {
     const prompt = `
  You are reviewing a legal contract.
 
@@ -75,19 +79,24 @@ export async function segmentContractClauses(rawText: string) {
 
  Return every meaningful clause you can identify.
 
- Contract text:
- ${boundedText}
+ Section ${index + 1} of ${sections.length}:
+ ${section}
+
+ If the contract continues beyond this section, return only clauses found in this section.
  `;
 
     const extracted = await invokeStructuredOutputWithFallback(
-        clauseExtractor,
-        model,
-        extractedClauseSchema,
-        prompt,
-        "clause extraction",
+      clauseExtractor,
+      model,
+      extractedClauseSchema,
+      prompt,
+      "clause extraction",
     );
 
-    const clauses = dedupeClauses(extracted.clauses);
+    extractedClauses.push(...extracted.clauses);
+  }
+
+  const clauses = dedupeClauses(extractedClauses);
 
     if (clauses.length === 0) {
         throw new Error(
@@ -95,7 +104,7 @@ export async function segmentContractClauses(rawText: string) {
         );
     }
 
-    return clauses;
+  return clauses;
 }
 
 export async function analyzeContractClauses(
@@ -214,6 +223,31 @@ function createGeminiModel() {
     });
 }
 
+function chunkContractForClauseExtraction(rawText: string) {
+  if (rawText.length <= MAX_CLAUSE_PROMPT_CHARS) {
+    return [rawText];
+  }
+
+  const chunks: string[] = [];
+  let cursor = 0;
+
+  while (cursor < rawText.length) {
+    const end = Math.min(cursor + MAX_CLAUSE_PROMPT_CHARS, rawText.length);
+    const slice = rawText.slice(cursor, end).trim();
+    if (slice) {
+      chunks.push(slice);
+    }
+
+    if (end >= rawText.length) {
+      break;
+    }
+
+    cursor = Math.max(0, end - CLAUSE_PROMPT_OVERLAP_CHARS);
+  }
+
+  return chunks;
+}
+
 async function invokeStructuredOutputWithFallback<T>(
     structuredInvoker: { invoke: (prompt: string) => Promise<T> },
     model: { invoke: (prompt: string) => Promise<unknown> },
@@ -273,11 +307,11 @@ function parseJsonWithSchema<T>(
     let parsed: unknown;
     try {
         parsed = JSON.parse(jsonText);
-    } catch (error) {
+    } catch {
         try {
             const repaired = jsonrepair(jsonText);
             parsed = JSON.parse(repaired);
-        } catch (repairError) {
+        } catch {
             throw new Error(
                 `Unable to parse ${contextLabel} JSON response. ${stringifyError(originalError)}`,
             );

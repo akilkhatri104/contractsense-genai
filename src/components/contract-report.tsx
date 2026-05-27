@@ -1,5 +1,6 @@
-import { AlertTriangle, Bot, Columns2, FileWarning, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Columns2, FileWarning, ShieldCheck } from "lucide-react";
 
+import { ContractChat } from "@/components/contract-chat";
 import { ContractReportExportButton } from "@/components/contract-report-export-button";
 import {
   Accordion,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 type ContractReportProps = {
   clauses: ContractClause[];
   completedAt: string | null;
+  contractId: string;
   createdAt: string;
   currentStage: ContractStage;
   errorMessage: string | null;
@@ -38,6 +40,7 @@ type ContractReportProps = {
 export function ContractReport({
   clauses,
   completedAt,
+  contractId,
   createdAt,
   currentStage,
   errorMessage,
@@ -256,19 +259,7 @@ export function ContractReport({
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/60 p-6">
-            <div className="flex items-center gap-3">
-              <Bot className="size-5 text-slate-300" />
-              <h2 className="text-lg font-semibold text-white">Chatbot</h2>
-            </div>
-            <p className="mt-3 text-sm text-slate-400">
-              Floating contract assistant placeholder. The current report is ready
-              for a future clause-level Q&A assistant.
-            </p>
-            <Button type="button" variant="outline" className="mt-4" disabled>
-              Coming next
-            </Button>
-          </section>
+          <ContractChat contractId={contractId} contractTitle={title} />
 
           <section className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/60 p-6">
             <div className="flex items-center gap-3">
