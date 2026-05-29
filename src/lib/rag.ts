@@ -21,6 +21,7 @@ const googleProvider = createGoogleGenerativeAI({
 const MAX_CHUNK_CHARS = 1600;
 const CHUNK_OVERLAP_CHARS = 200;
 const MAX_CONTEXT_CHUNKS = 6;
+const EMBEDDING_DIMENSIONS = 768;
 
 type ContractChunkInput = {
   chunkIndex: number;
@@ -111,7 +112,21 @@ export async function embedContractChunks(
     const embeddings = await embedMany({
       model: getEmbeddingModel(),
       values: chunks.map((chunk) => chunk.content),
+      providerOptions: {
+        google: {
+          outputDimensionality: EMBEDDING_DIMENSIONS,
+          taskType: "RETRIEVAL_DOCUMENT",
+        },
+      },
     });
+
+    for (const [index, embedding] of embeddings.embeddings.entries()) {
+      if (embedding.length !== EMBEDDING_DIMENSIONS) {
+        throw new Error(
+          `Invalid embedding dimensions for chunk ${index}: expected ${EMBEDDING_DIMENSIONS}, received ${embedding.length}.`,
+        );
+      }
+    }
 
     await transactionDb.delete(contractChunks).where(
       and(
@@ -141,7 +156,19 @@ export async function embedQuery(query: string) {
   const { embedding } = await embed({
     model: getEmbeddingModel(),
     value: query,
+    providerOptions: {
+      google: {
+        outputDimensionality: EMBEDDING_DIMENSIONS,
+        taskType: "RETRIEVAL_QUERY",
+      },
+    },
   });
+
+  if (embedding.length !== EMBEDDING_DIMENSIONS) {
+    throw new Error(
+      `Invalid query embedding dimensions: expected ${EMBEDDING_DIMENSIONS}, received ${embedding.length}.`,
+    );
+  }
 
   return embedding;
 }

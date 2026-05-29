@@ -364,13 +364,13 @@ function coerceClauseAnalysis(parsed: unknown, contextLabel: string): unknown {
 
 function normalizeAnalysisArray(parsed: unknown) {
     if (Array.isArray(parsed)) {
-        return normalizeAnalysisItems(parsed);
+        return normalizeAnalysisItems(parsed) ?? parsed;
     }
 
     if (parsed && typeof parsed === "object" && "analyses" in parsed) {
         const analyses = (parsed as { analyses?: unknown }).analyses;
         if (Array.isArray(analyses)) {
-            return normalizeAnalysisItems(analyses);
+            return normalizeAnalysisItems(analyses) ?? analyses;
         }
     }
 
