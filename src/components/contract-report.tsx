@@ -59,15 +59,15 @@ export function ContractReport({
 
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.95),rgba(2,6,23,0.98))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.35)]">
+      <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.12),_transparent_35%),linear-gradient(180deg,oklch(0.24_0.018_240)_0%,oklch(0.2_0.016_240)_100%)] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.25)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/70">
               Contract report
             </p>
-            <h1 className="mt-3 text-3xl font-semibold text-white">{title}</h1>
-            <p className="mt-3 text-sm text-slate-300">
-              Uploaded as <span className="font-medium text-slate-100">{fileName}</span>{" "}
+            <h1 className="mt-3 text-3xl font-semibold text-foreground">{title}</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Uploaded as <span className="font-medium text-foreground">{fileName}</span>{" "}
               on {new Date(createdAt).toLocaleString()}.
               {completedAt
                 ? ` Analysis finished on ${new Date(completedAt).toLocaleString()}.`
@@ -118,7 +118,7 @@ export function ContractReport({
                   completed &&
                     "border-emerald-400/20 bg-emerald-500/10 text-emerald-50",
                   active && "border-cyan-400/30 bg-cyan-500/10 text-cyan-50",
-                  !completed && !active && "border-white/10 bg-white/5 text-slate-300",
+                  !completed && !active && "border-border/70 bg-card/40 text-muted-foreground",
                 )}
               >
                 <p className="text-xs uppercase tracking-[0.2em] text-inherit/70">
@@ -144,13 +144,13 @@ export function ContractReport({
       ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/80 p-6">
+        <div className="rounded-[1.75rem] border border-border/70 bg-card/60 p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 Clause viewer
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-white">
+              <h2 className="mt-2 text-xl font-semibold text-foreground">
                 Clause-by-clause analysis
               </h2>
             </div>
@@ -165,37 +165,37 @@ export function ContractReport({
                     <div className="flex min-w-0 flex-1 flex-col gap-2 pr-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge className={getRiskTone(clause.risk)}>{clause.risk} risk</Badge>
-                        <span className="text-sm font-medium text-slate-100">
+                        <span className="text-sm font-medium text-foreground">
                           {clause.clauseType}
                         </span>
                       </div>
-                      <p className="line-clamp-2 text-sm text-slate-400">{clause.content}</p>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{clause.content}</p>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
                           Original clause
                         </p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-200">
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
                           {clause.content}
                         </p>
                       </div>
                       <div className="grid gap-4 lg:grid-cols-2">
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                          <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                        <div className="rounded-2xl border border-border/70 bg-card/40 p-4">
+                          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
                             Why it matters
                           </p>
-                          <p className="mt-2 text-sm leading-6 text-slate-200">
+                          <p className="mt-2 text-sm leading-6 text-foreground">
                             {clause.riskReason}
                           </p>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                          <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                        <div className="rounded-2xl border border-border/70 bg-card/40 p-4">
+                          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
                             Plain English
                           </p>
-                          <p className="mt-2 text-sm leading-6 text-slate-200">
+                          <p className="mt-2 text-sm leading-6 text-foreground">
                             {clause.plainEnglish}
                           </p>
                         </div>
@@ -214,28 +214,28 @@ export function ContractReport({
               ))}
             </Accordion>
           ) : (
-            <p className="mt-6 text-sm text-slate-400">
+            <p className="mt-6 text-sm text-muted-foreground">
               Clause extraction has not produced reviewable output yet.
             </p>
           )}
         </div>
 
         <div className="space-y-6">
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/80 p-6">
+          <section className="rounded-[1.75rem] border border-border/70 bg-card/60 p-6">
             <div className="flex items-center gap-3">
               <ShieldCheck className="size-5 text-cyan-300" />
-              <h2 className="text-lg font-semibold text-white">Summary panel</h2>
+              <h2 className="text-lg font-semibold text-foreground">Summary panel</h2>
             </div>
-            <p className="mt-4 text-sm leading-7 text-slate-300">
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">
               {overallSummary ??
                 "The report summary will appear here once the contract analysis finishes."}
             </p>
           </section>
 
-          <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/80 p-6">
+          <section className="rounded-[1.75rem] border border-border/70 bg-card/60 p-6">
             <div className="flex items-center gap-3">
               <AlertTriangle className="size-5 text-amber-300" />
-              <h2 className="text-lg font-semibold text-white">Risk badges</h2>
+              <h2 className="text-lg font-semibold text-foreground">Risk badges</h2>
             </div>
             <div className="mt-5 grid gap-3">
               <RiskStat
@@ -256,12 +256,12 @@ export function ContractReport({
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/60 p-6">
+          <section className="rounded-[1.75rem] border border-dashed border-border/70 bg-card/45 p-6">
             <div className="flex items-center gap-3">
-              <Columns2 className="size-5 text-slate-300" />
-              <h2 className="text-lg font-semibold text-white">Comparison screen</h2>
+              <Columns2 className="size-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">Comparison screen</h2>
             </div>
-            <p className="mt-3 text-sm text-slate-400">
+            <p className="mt-3 text-sm text-muted-foreground">
               Split-view comparison is reserved for future multi-contract review.
             </p>
             <Button type="button" variant="outline" className="mt-4" disabled>
@@ -272,11 +272,11 @@ export function ContractReport({
       </section>
 
       {rawText ? (
-        <section className="rounded-[1.75rem] border border-white/10 bg-slate-950/80 p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/60 p-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
             Parsed source text
           </p>
-          <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-2xl border border-white/10 bg-slate-900/80 p-4 text-sm leading-6 text-slate-300">
+          <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-2xl border border-border/70 bg-secondary/45 p-4 text-sm leading-6 text-muted-foreground">
             {rawText.slice(0, 5000)}
             {rawText.length > 5000 ? "\n\n[Preview truncated]" : ""}
           </pre>
@@ -296,7 +296,7 @@ function RiskStat({
   tone: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-white/10 p-4", tone)}>
+    <div className={cn("rounded-2xl border border-border/70 p-4", tone)}>
       <p className="text-3xl font-semibold">{count}</p>
       <p className="mt-1 text-sm">{label}</p>
     </div>

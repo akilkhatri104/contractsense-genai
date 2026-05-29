@@ -48,16 +48,16 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
   }
 
   return (
-    <section className="rounded-[1.75rem] border border-white/10 bg-gradient-to-b from-slate-950/95 via-slate-950/90 to-slate-900/95 p-6 shadow-[0_20px_60px_-35px_rgba(34,211,238,0.6)]">
+    <section className="rounded-[1.75rem] border border-border/70 bg-gradient-to-b from-card/70 via-card/60 to-secondary/50 p-6 shadow-[0_20px_60px_-35px_rgba(56,189,248,0.45)]">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-slate-900">
+        <div className="flex size-10 items-center justify-center rounded-2xl border border-border/70 bg-secondary/60">
           <Bot className="size-5 text-cyan-200" />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
             Contract assistant
           </p>
-          <h2 className="mt-2 text-lg font-semibold text-white">
+          <h2 className="mt-2 text-lg font-semibold text-foreground">
             Ask about {contractTitle}
           </h2>
         </div>
@@ -71,7 +71,7 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
               type="button"
               disabled={isStreaming}
               onClick={() => setInput(question)}
-              className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:border-cyan-400/40 hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full border border-border/70 bg-card/45 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               {question}
             </button>
@@ -85,7 +85,7 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
         ) : null}
 
         {latestMessages.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/60 p-4 text-sm text-slate-300">
+          <div className="rounded-2xl border border-dashed border-border/70 bg-secondary/45 p-4 text-sm text-muted-foreground">
             <p className="inline-flex items-center gap-2 text-cyan-100">
               <Sparkles className="size-4" />
               Ask about renewal terms, payment schedules, liability limits, or unusual clauses.
@@ -119,7 +119,7 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
                     "max-w-[88%] rounded-2xl border px-4 py-3 text-sm leading-6",
                     isUser
                       ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-50"
-                      : "border-white/10 bg-slate-900/75 text-slate-100",
+                      : "border-border/70 bg-secondary/50 text-foreground",
                   )}
                 >
                   {isUser ? (
@@ -134,12 +134,12 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
                         code: ({ className, children, ...props }) => {
                           const isInline = !className;
                           return isInline ? (
-                            <code className="rounded bg-slate-800/90 px-1 py-0.5 text-cyan-100" {...props}>
+                            <code className="rounded bg-secondary px-1 py-0.5 text-primary-foreground" {...props}>
                               {children}
                             </code>
                           ) : (
                             <code
-                              className="block overflow-x-auto rounded-xl bg-slate-950/80 p-3 text-xs text-slate-100"
+                              className="block overflow-x-auto rounded-xl bg-card p-3 text-xs text-foreground"
                               {...props}
                             >
                               {children}
@@ -170,10 +170,10 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
             onChange={(event) => setInput(event.target.value)}
             placeholder="Ask a question about this contract..."
             rows={3}
-            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20"
+            className="w-full resize-none rounded-2xl border border-border/70 bg-card/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
           />
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             The assistant answers using extracted contract clauses.
           </p>
           <Button type="submit" disabled={isStreaming || !input.trim()}>

@@ -64,7 +64,7 @@ export default async function ContractDetailPage({
   const activeTab = tab === "chat" || tab === "document" ? tab : "analysis";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.16),_transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] px-6 py-10 text-slate-50">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_24%),linear-gradient(180deg,oklch(0.2_0.015_240)_0%,oklch(0.18_0.015_240)_48%,oklch(0.16_0.013_238)_100%)] px-6 py-10 text-foreground">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export default async function ContractDetailPage({
           <UserButton />
         </div>
 
-        <div className="inline-flex rounded-2xl border border-white/10 bg-slate-950/70 p-1">
+        <div className="inline-flex rounded-2xl border border-border/70 bg-card/50 p-1">
           <Button asChild variant={activeTab === "analysis" ? "default" : "ghost"}>
             <Link href={`/contract/${id}?tab=analysis`}>Analysis</Link>
           </Button>
@@ -113,7 +113,7 @@ export default async function ContractDetailPage({
         ) : null}
 
         {activeTab === "document" ? (
-          <section className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/80">
+          <section className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-card/60">
             {contract.contentType === "application/pdf" ? (
               <iframe
                 title={`Original contract PDF: ${contract.originalName}`}
@@ -122,7 +122,7 @@ export default async function ContractDetailPage({
               />
             ) : (
               <div className="p-6">
-                <p className="text-sm text-slate-300">
+                <p className="text-sm text-muted-foreground">
                   This original file is not a PDF preview. Use the download link instead.
                 </p>
                 <Button asChild className="mt-4">

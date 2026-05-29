@@ -193,7 +193,7 @@ export function DocumentUpload() {
         {...getRootProps()}
         className={cn(
           "cursor-pointer rounded-3xl border border-dashed px-6 py-10 transition-colors",
-          "bg-slate-950/70",
+          "border-border/70 bg-card/55",
           isDragActive && "border-cyan-400 bg-cyan-500/10",
           isDragReject && "border-rose-400 bg-rose-500/10",
           (isUploading || !isLoaded) && "cursor-not-allowed opacity-70",
@@ -202,7 +202,7 @@ export function DocumentUpload() {
         <input {...getInputProps()} />
 
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-14 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-border/70 bg-secondary/60">
             {isUploading ? (
               <LoaderCircle className="size-6 animate-spin text-cyan-300" />
             ) : (
@@ -210,10 +210,10 @@ export function DocumentUpload() {
             )}
           </div>
 
-          <h3 className="mt-4 text-lg font-semibold text-slate-100">
+          <h3 className="mt-4 text-lg font-semibold text-foreground">
             Upload a contract PDF
           </h3>
-          <p className="mt-2 max-w-xl text-sm text-slate-400">
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             Drag in one PDF. After the file lands in your private Supabase
             folder, a contract row is created and Gemini runs clause extraction,
             risk scoring, and plain-English summarization.
@@ -230,7 +230,7 @@ export function DocumentUpload() {
             >
               Choose PDF
             </Button>
-            <span className="text-xs uppercase tracking-[0.2em] text-slate-500">
+            <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
               PDF only, {formatFileSize(MAX_DOCUMENT_SIZE_BYTES)} max
             </span>
           </div>
@@ -248,21 +248,21 @@ export function DocumentUpload() {
           {uploads.map((upload) => (
             <div
               key={upload.id}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 px-4 py-3"
+              className="flex items-start justify-between gap-3 rounded-2xl border border-border/70 bg-card/55 px-4 py-3"
             >
               <div className="flex min-w-0 items-start gap-3">
-                <div className="mt-0.5 rounded-xl border border-slate-800 bg-slate-900 p-2">
-                  <FileText className="size-4 text-slate-300" />
+                <div className="mt-0.5 rounded-xl border border-border/70 bg-secondary/50 p-2">
+                  <FileText className="size-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-100">
+                  <p className="truncate font-medium text-foreground">
                     {upload.name}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {formatFileSize(upload.sizeBytes)}
                   </p>
                   {upload.message ? (
-                    <p className="mt-2 text-sm text-slate-300">
+                    <p className="mt-2 text-sm text-muted-foreground">
                       {upload.message}
                     </p>
                   ) : null}
@@ -278,7 +278,7 @@ export function DocumentUpload() {
                   upload.status === "analyzing" &&
                     "bg-violet-500/15 text-violet-200",
                   upload.status === "queued" &&
-                    "bg-slate-700/70 text-slate-200",
+                    "bg-secondary text-secondary-foreground",
                   upload.status === "redirecting" &&
                     "bg-emerald-500/15 text-emerald-200",
                 )}

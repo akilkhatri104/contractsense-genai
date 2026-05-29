@@ -41,18 +41,18 @@ export default async function ContractsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.14),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.18),_transparent_30%),linear-gradient(180deg,#020617_0%,#0f172a_52%,#111827_100%)] px-6 py-10 text-slate-50">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.1),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.14),_transparent_30%),linear-gradient(180deg,oklch(0.2_0.015_240)_0%,oklch(0.18_0.015_240)_52%,oklch(0.16_0.013_238)_100%)] px-6 py-10 text-foreground">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
+        <section className="rounded-[2rem] border border-border/70 bg-card/40 p-6 backdrop-blur">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-xs uppercase tracking-[0.35em] text-emerald-200/70">
                 ContractSense workflow
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
                 Upload, analyze, review.
               </h1>
-              <p className="mt-4 text-sm leading-7 text-slate-300">
+              <p className="mt-4 text-sm leading-7 text-muted-foreground">
                 Drop in a PDF contract, let Gemini extract clauses and risk signals,
                 then land directly on a clause-by-clause review screen with plain-English
                 explanations.
@@ -68,15 +68,15 @@ export default async function ContractsPage() {
         </section>
 
         <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-6 shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
+          <div className="rounded-[2rem] border border-border/70 bg-card/55 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.3)]">
             <div className="max-w-2xl">
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/70">
                 Stage 1
               </p>
-              <h2 className="mt-3 text-2xl font-semibold text-white">
+              <h2 className="mt-3 text-2xl font-semibold text-foreground">
                 Upload contract PDF
               </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">
                 The file is uploaded into your private Supabase bucket, a contract
                 row is created in Postgres, and the analysis pipeline runs immediately.
               </p>
@@ -110,13 +110,13 @@ export default async function ContractsPage() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-6">
+        <section className="rounded-[2rem] border border-border/70 bg-card/55 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
                 Existing reports
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">
+              <h2 className="mt-2 text-2xl font-semibold text-foreground">
                 Recent contracts
               </h2>
             </div>
@@ -130,15 +130,15 @@ export default async function ContractsPage() {
               {contractRows.map((contract) => (
                 <div
                   key={contract.contractId}
-                  className="group rounded-[1.5rem] border border-white/10 bg-white/5 p-5 transition hover:border-cyan-300/30 hover:bg-cyan-400/5"
+                  className="group rounded-[1.5rem] border border-border/70 bg-card/35 p-5 transition hover:border-primary/40 hover:bg-primary/10"
                 >
                   <Link href={`/contract/${contract.contractId}`} className="block">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-semibold text-white group-hover:text-cyan-100">
+                        <h3 className="text-lg font-semibold text-foreground group-hover:text-primary-foreground">
                           {contract.title}
                         </h3>
-                        <p className="mt-1 text-sm text-slate-400">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {contract.originalName}
                         </p>
                       </div>
@@ -165,7 +165,7 @@ export default async function ContractsPage() {
                       <MiniMetric label="Low" value={contract.lowRiskCount} tone="text-emerald-200" />
                     </div>
 
-                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
                       <span>{new Date(contract.createdAt).toLocaleString()}</span>
                       <span>
                         {contract.errorMessage
@@ -191,7 +191,7 @@ export default async function ContractsPage() {
               ))}
             </div>
           ) : (
-            <p className="mt-6 text-sm text-slate-400">
+            <p className="mt-6 text-sm text-muted-foreground">
               No contracts analyzed yet. Upload your first PDF to generate a review report.
             </p>
           )}
@@ -211,9 +211,9 @@ function MiniMetric({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-3">
+    <div className="rounded-2xl border border-border/70 bg-secondary/40 p-3">
       <p className={`text-xl font-semibold ${tone}`}>{value}</p>
-      <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <p className="mt-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -228,10 +228,10 @@ function StageCard({
   title: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-      <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{index}</p>
-      <h3 className="mt-3 text-lg font-semibold text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
+    <div className="rounded-[1.5rem] border border-border/70 bg-card/35 p-5">
+      <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{index}</p>
+      <h3 className="mt-3 text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
     </div>
   );
 }
