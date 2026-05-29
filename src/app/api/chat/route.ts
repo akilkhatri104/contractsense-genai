@@ -6,6 +6,11 @@ import {
   type UIMessage,
 } from "ai";
 
+import {
+  getFriendlyQuotaMessage,
+  isQuotaOrRateLimitError,
+  withQuotaRetry,
+} from "@/lib/ai-quota";
 import { createChatModel, embedQuery, fetchRelevantChunks, formatContext } from "@/lib/rag";
 
 type ChatRequestBody = {
@@ -39,20 +44,32 @@ export async function POST(request: Request) {
     return new Response("No user message provided.", { status: 400 });
   }
 
-  const queryEmbedding = await embedQuery(userQuestion);
-  const contextChunks = await fetchRelevantChunks(contractId, queryEmbedding);
-  const context = formatContext(contextChunks);
+  try {
+    const queryEmbedding = await withQuotaRetry(() => embedQuery(userQuestion));
+    const contextChunks = await fetchRelevantChunks(contractId, queryEmbedding);
+    const context = formatContext(contextChunks);
 
-  const system = buildSystemPrompt(context);
-  const result = await streamText({
-    model: createChatModel(),
-    system,
-    messages: modelMessages,
-  });
+    const system = buildSystemPrompt(context);
+    const result = await withQuotaRetry(() =>
+      streamText({
+        model: createChatModel(),
+        system,
+        messages: modelMessages,
+      }),
+    );
 
-  const uiStream = result.toUIMessageStream();
+    const uiStream = result.toUIMessageStream();
 
-  return createUIMessageStreamResponse({ stream: uiStream });
+    return createUIMessageStreamResponse({ stream: uiStream });
+  } catch (error) {
+    if (isQuotaOrRateLimitError(error)) {
+      return new Response(getFriendlyQuotaMessage(error), { status: 429 });
+    }
+
+    const message =
+      error instanceof Error ? error.message : "Unable to process chat request.";
+    return new Response(message, { status: 500 });
+  }
 }
 
 function buildSystemPrompt(context: string) {

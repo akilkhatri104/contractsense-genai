@@ -16,7 +16,7 @@ type ContractChatProps = {
 
 export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: { contractId },
@@ -54,6 +54,12 @@ export function ContractChat({ contractId, contractTitle }: ContractChatProps) {
       </div>
 
       <div className="mt-4 space-y-3">
+        {error ? (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+            {error.message || "Chat request failed. Please try again."}
+          </div>
+        ) : null}
+
         {latestMessages.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/60 p-4 text-sm text-slate-400">
             Ask about renewal terms, payment schedules, liability limits, or unusual clauses.

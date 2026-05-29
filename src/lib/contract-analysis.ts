@@ -6,6 +6,7 @@ import { PDFParse } from "pdf-parse";
 import { z } from "zod";
 
 import { type ContractClause } from "@/lib/contracts";
+import { withQuotaRetry } from "@/lib/ai-quota";
 
 
 const CLAUSE_BATCH_SIZE = 8;
@@ -256,7 +257,7 @@ async function invokeStructuredOutputWithFallback<T>(
     contextLabel: string,
 ): Promise<T> {
     try {
-        return await structuredInvoker.invoke(prompt);
+        return await withQuotaRetry(() => structuredInvoker.invoke(prompt));
     } catch (error) {
         const fallbackPrompt = `${prompt}
 
@@ -264,7 +265,7 @@ Return ONLY valid JSON that matches this schema:
 ${schema.toString()}
 Do not wrap the JSON in markdown fences.`;
 
-        const response = await model.invoke(fallbackPrompt);
+        const response = await withQuotaRetry(() => model.invoke(fallbackPrompt));
 
         try {
             return parseJsonWithSchema(response, schema, contextLabel, error);
@@ -283,7 +284,9 @@ Rules:
 - No extra keys at the top level.
 - Do not wrap in markdown.`;
 
-            const strictResponse = await model.invoke(strictPrompt);
+            const strictResponse = await withQuotaRetry(() =>
+                model.invoke(strictPrompt),
+            );
             return parseJsonWithSchema(
                 strictResponse,
                 schema,

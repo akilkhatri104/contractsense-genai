@@ -11,6 +11,7 @@ import {
   segmentContractClauses,
   summarizeContract,
 } from "@/lib/contract-analysis";
+import { getFriendlyQuotaMessage, isQuotaOrRateLimitError } from "@/lib/ai-quota";
 import { embedContractChunks } from "@/lib/rag";
 import {
   buildContractTitle,
@@ -121,8 +122,11 @@ export async function createAnalyzedContract(
       status: "completed",
     };
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Contract analysis failed.";
+    const message = isQuotaOrRateLimitError(error)
+      ? getFriendlyQuotaMessage(error)
+      : error instanceof Error
+        ? error.message
+        : "Contract analysis failed.";
 
     await failContract(getToken, contractId, message);
     revalidatePath("/contracts");
