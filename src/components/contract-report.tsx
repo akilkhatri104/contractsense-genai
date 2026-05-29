@@ -1,6 +1,5 @@
 import { AlertTriangle, Columns2, FileWarning, ShieldCheck } from "lucide-react";
 
-import { ContractChat } from "@/components/contract-chat";
 import { ContractReportExportButton } from "@/components/contract-report-export-button";
 import {
   Accordion,
@@ -23,7 +22,6 @@ import { cn } from "@/lib/utils";
 type ContractReportProps = {
   clauses: ContractClause[];
   completedAt: string | null;
-  contractId: string;
   createdAt: string;
   currentStage: ContractStage;
   errorMessage: string | null;
@@ -40,7 +38,6 @@ type ContractReportProps = {
 export function ContractReport({
   clauses,
   completedAt,
-  contractId,
   createdAt,
   currentStage,
   errorMessage,
@@ -258,8 +255,6 @@ export function ContractReport({
               />
             </div>
           </section>
-
-          <ContractChat contractId={contractId} contractTitle={title} />
 
           <section className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/60 p-6">
             <div className="flex items-center gap-3">
